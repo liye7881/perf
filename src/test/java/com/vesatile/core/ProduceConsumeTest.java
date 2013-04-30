@@ -4,7 +4,6 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -21,8 +20,6 @@ import com.vesatile.core.entity.UserDetail;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath*:applicationContext.xml")
 public class ProduceConsumeTest {
-	private static Logger logger = Logger.getLogger(ProduceConsumeTest.class);
-
 	@Autowired
 	private SessionFactory sessionFactory;
 
@@ -38,8 +35,6 @@ public class ProduceConsumeTest {
 	public void testSave() {
 		userDetailGenerator.init(100);
 
-		long start = System.currentTimeMillis();
-
 		Session session = sessionFactory.getCurrentSession();
 		Criteria criteria = session.createCriteria(UserDetail.class);
 		criteria.addOrder(Order.asc("id"));
@@ -54,8 +49,6 @@ public class ProduceConsumeTest {
 			Assert.assertEquals(1, result.size());
 			Assert.assertEquals(userDetail, result.get(0));
 		}
-
-		logger.warn("Finish in " + (System.currentTimeMillis() - start));
 	}
 
 }

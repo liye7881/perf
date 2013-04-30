@@ -64,6 +64,4 @@
 		<property name="transactionManager" ref="transactionManager" />
 		<property name="propagationBehaviorName" value="PROPAGATION_REQUIRES_NEW" />
 	</bean>
-
-	<bean class="com.vesatile.core.ConsumeContainer" init-method="start" />
 </beans>

@@ -7,7 +7,6 @@ import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Order;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,21 +36,16 @@ public class SerialTest {
 	public void testSave() {
 		userDetailGenerator.init(100);
 
-		long start = System.currentTimeMillis();
-
 		Session session = sessionFactory.getCurrentSession();
 		Criteria criteria = session.createCriteria(UserDetail.class);
 		criteria.addOrder(Order.asc("id"));
 
 		List<UserDetail> details = (List<UserDetail>) criteria.list();
 		for (UserDetail userDetail : details) {
-			if(logger.isInfoEnabled()){
+			if (logger.isInfoEnabled()) {
 				logger.info(userDetail);
 			}
 		}
-
-		logger.warn("Finish in " + (System.currentTimeMillis() - start));
-		Assert.assertTrue(true);
 	}
 
 }

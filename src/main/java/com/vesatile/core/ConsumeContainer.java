@@ -1,102 +1,58 @@
 package com.vesatile.core;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.vesatile.core.service.ConsumeService;
 
-public class ConsumeContainer extends Thread {
-	private static class ExecuteThread implements Callable<List<Object>> {
-		private Object task;
-
-		private ConsumeService[] consumeServices;
-
-		public ExecuteThread(Object task, ConsumeService[] consumeServices) {
-			super();
-			this.task = task;
-			this.consumeServices = consumeServices;
-		}
-
-		@Override
-		public List<Object> call() {
-			List<Object> objects = new ArrayList<Object>();
-
-			for (ConsumeService consumeService : consumeServices) {
-				Object result = consumeService.execute(task);
-				if (result != null) {
-					objects.add(result);
-				}
-			}
-
-			return objects;
-		}
-	}
-
+@Component
+public class ConsumeContainer {
 	private static Logger logger = Logger.getLogger(ConsumeContainer.class);
 
-	private ExecutorService executor = Executors.newFixedThreadPool(5);
-
-	private Queue<Object> tasks = new LinkedList<Object>();
+	private ExecutorService executor;
 
 	private ConcurrentMap<Object, Future<List<Object>>> results = new ConcurrentHashMap<Object, Future<List<Object>>>();
+
+	public ConsumeContainer() {
+		executor = new ThreadPoolExecutor(0, 20, 5 * 60, TimeUnit.SECONDS,
+				new LinkedBlockingQueue<Runnable>());
+	}
 
 	@Autowired
 	private ConsumeService[] consumeServices;
 
-	@Autowired
-	private ExecutingResult executingResult;
-
 	public void addTask(Object task) {
-		synchronized (tasks) {
-			tasks.add(task);
-		}
+		results.put(task,
+				executor.submit(new ExecuteThread(task, consumeServices)));
 	}
 
 	public List<Object> getResult(Object task) {
-		synchronized (task) {
-			Future<List<Object>> future = results.get(task);
-			while (future == null && tasks.contains(task)) {
-				future = results.get(task);
+		Future<List<Object>> future = results.get(task);
+		List<Object> result = new ArrayList<Object>();
+		try {
+			if (future != null) {
+				result.addAll(future.get());
 			}
-
-			List<Object> result = null;
-			try {
-				if (future != null)
-					result = future.get();
-			} catch (InterruptedException e) {
-				logger.error("", e);
-			} catch (ExecutionException e) {
-				logger.error("", e);
-			}
-
-			return result;
+		} catch (InterruptedException e) {
+			logger.error("", e);
+		} catch (ExecutionException e) {
+			logger.error("", e);
+		} finally {
+			results.remove(task);
 		}
-	}
 
-	@Override
-	public void run() {
-		while (true) {
-			synchronized (tasks) {
-				if (!tasks.isEmpty()) {
-					Object task = tasks.poll();
-					synchronized (task) {
-						results.put(task, executor.submit(new ExecuteThread(
-								task, consumeServices)));
-					}
-				}
-			}
-		}
+		return result;
 	}
 }
