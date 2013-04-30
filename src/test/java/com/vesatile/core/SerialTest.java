@@ -2,8 +2,6 @@ package com.vesatile.core;
 
 import java.util.List;
 
-import junit.framework.Assert;
-
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
@@ -20,8 +18,8 @@ import com.vesatile.core.entity.UserDetail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath*:applicationContext.xml")
-public class ProduceConsumeTest {
-	private static Logger logger = Logger.getLogger(ProduceConsumeTest.class);
+public class SerialTest {
+	private static Logger logger = Logger.getLogger(SerialTest.class);
 
 	@Autowired
 	private SessionFactory sessionFactory;
@@ -46,13 +44,9 @@ public class ProduceConsumeTest {
 
 		List<UserDetail> details = (List<UserDetail>) criteria.list();
 		for (UserDetail userDetail : details) {
-			consumeContainer.addTask(userDetail);
-		}
-
-		for (UserDetail userDetail : details) {
-			List<Object> result = consumeContainer.getResult(userDetail);
-			Assert.assertEquals(1, result.size());
-			Assert.assertEquals(userDetail, result.get(0));
+			if(logger.isInfoEnabled()){
+				logger.info(userDetail);
+			}
 		}
 
 		logger.warn("Finish in " + (System.currentTimeMillis() - start));

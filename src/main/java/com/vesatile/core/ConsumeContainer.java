@@ -67,13 +67,14 @@ public class ConsumeContainer extends Thread {
 	public List<Object> getResult(Object task) {
 		synchronized (task) {
 			Future<List<Object>> future = results.get(task);
-			while (future == null) {
+			while (future == null && tasks.contains(task)) {
 				future = results.get(task);
 			}
 
 			List<Object> result = null;
 			try {
-				result = future.get();
+				if (future != null)
+					result = future.get();
 			} catch (InterruptedException e) {
 				logger.error("", e);
 			} catch (ExecutionException e) {
