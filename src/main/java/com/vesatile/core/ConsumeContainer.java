@@ -25,13 +25,13 @@ public class ConsumeContainer {
 
 	private ConcurrentMap<Object, Future<List<Object>>> results = new ConcurrentHashMap<Object, Future<List<Object>>>();
 
+	@Autowired
+	private ConsumeService[] consumeServices;
+
 	public ConsumeContainer() {
 		executor = new ThreadPoolExecutor(0, 20, 5 * 60, TimeUnit.SECONDS,
 				new LinkedBlockingQueue<Runnable>());
 	}
-
-	@Autowired
-	private ConsumeService[] consumeServices;
 
 	public void addTask(Object task) {
 		results.put(task,
