@@ -29,7 +29,7 @@ public class ConsumeContainer {
 	private ConsumeService[] consumeServices;
 
 	public ConsumeContainer() {
-		executor = new ThreadPoolExecutor(0, 20, 5 * 60, TimeUnit.SECONDS,
+		executor = new ThreadPoolExecutor(0, 1, 5 * 60, TimeUnit.SECONDS,
 				new LinkedBlockingQueue<Runnable>());
 	}
 

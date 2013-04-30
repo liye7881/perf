@@ -1,9 +1,11 @@
 package com.vesatile.core;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
+import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Order;
@@ -30,22 +32,33 @@ public class SerialTest {
 	@Autowired
 	private ConsumeContainer consumeContainer;
 
-	@SuppressWarnings("unchecked")
 	@Test
 	@Transactional
 	public void testSave() {
-		userDetailGenerator.init(100);
+		userDetailGenerator.init(10000);
 
 		Session session = sessionFactory.getCurrentSession();
 		Criteria criteria = session.createCriteria(UserDetail.class);
 		criteria.addOrder(Order.asc("id"));
 
-		List<UserDetail> details = (List<UserDetail>) criteria.list();
+		long start = System.currentTimeMillis();
+
+		List<UserDetail> details = new ArrayList<UserDetail>();
+
+		ScrollableResults scroll = criteria.scroll();
+		while (scroll.next()) {
+			UserDetail userDetail = (UserDetail) scroll.get(0);
+			consumeContainer.addTask(userDetail);
+			details.add(userDetail);
+		}
+
 		for (UserDetail userDetail : details) {
 			if (logger.isInfoEnabled()) {
 				logger.info(userDetail);
 			}
 		}
+
+		logger.warn("Serial execute in " + (System.currentTimeMillis() - start));
 	}
 
 }

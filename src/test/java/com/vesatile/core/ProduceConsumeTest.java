@@ -1,10 +1,13 @@
 package com.vesatile.core;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
+import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Order;
@@ -20,6 +23,8 @@ import com.vesatile.core.entity.UserDetail;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath*:applicationContext.xml")
 public class ProduceConsumeTest {
+	private static Logger logger = Logger.getLogger(ProduceConsumeTest.class);
+
 	@Autowired
 	private SessionFactory sessionFactory;
 
@@ -29,19 +34,23 @@ public class ProduceConsumeTest {
 	@Autowired
 	private ConsumeContainer consumeContainer;
 
-	@SuppressWarnings("unchecked")
 	@Test
 	@Transactional
 	public void testSave() {
-		userDetailGenerator.init(100);
+		userDetailGenerator.init(10000);
 
 		Session session = sessionFactory.getCurrentSession();
 		Criteria criteria = session.createCriteria(UserDetail.class);
-		criteria.addOrder(Order.asc("id"));
+		criteria.addOrder(Order.desc("id"));
 
-		List<UserDetail> details = (List<UserDetail>) criteria.list();
-		for (UserDetail userDetail : details) {
+		long start = System.currentTimeMillis();
+
+		List<UserDetail> details = new ArrayList<UserDetail>();
+		ScrollableResults scroll = criteria.scroll();
+		while (scroll.next()) {
+			UserDetail userDetail = (UserDetail) scroll.get(0);
 			consumeContainer.addTask(userDetail);
+			details.add(userDetail);
 		}
 
 		for (UserDetail userDetail : details) {
@@ -49,6 +58,8 @@ public class ProduceConsumeTest {
 			Assert.assertEquals(1, result.size());
 			Assert.assertEquals(userDetail, result.get(0));
 		}
-	}
 
+		logger.warn("Parallel execute in "
+				+ (System.currentTimeMillis() - start));
+	}
 }
