@@ -1,16 +1,11 @@
 package com.vesatile.core;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
-
 import org.apache.log4j.Logger;
-import org.hibernate.Criteria;
-import org.hibernate.ScrollableResults;
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.criterion.Order;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +13,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.vesatile.core.entity.UserDetail;
+import com.vesatile.core.utils.FileUtils;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath*:applicationContext.xml")
@@ -36,27 +31,19 @@ public class ProduceConsumeTest {
 
 	@Test
 	@Transactional
-	public void testSave() {
-		userDetailGenerator.init(10000);
-
-		Session session = sessionFactory.getCurrentSession();
-		Criteria criteria = session.createCriteria(UserDetail.class);
-		criteria.addOrder(Order.desc("id"));
-
+	public void testSave() throws IOException {
 		long start = System.currentTimeMillis();
 
-		List<UserDetail> details = new ArrayList<UserDetail>();
-		ScrollableResults scroll = criteria.scroll();
-		while (scroll.next()) {
-			UserDetail userDetail = (UserDetail) scroll.get(0);
-			consumeContainer.addTask(userDetail);
-			details.add(userDetail);
+		List<String> urls = FileUtils.read(Thread.currentThread()
+				.getContextClassLoader().getResourceAsStream("url.txt"));
+		List<StringBuffer> tasks = new ArrayList<StringBuffer>();
+		for (String url : urls) {
+			StringBuffer task = new StringBuffer(url);
+			consumeContainer.addTask(task);
+			tasks.add(task);
 		}
-
-		for (UserDetail userDetail : details) {
-			List<Object> result = consumeContainer.getResult(userDetail);
-			Assert.assertEquals(1, result.size());
-			Assert.assertEquals(userDetail, result.get(0));
+		for (StringBuffer task : tasks) {
+			consumeContainer.getResult(task);
 		}
 
 		logger.warn("Parallel execute in "
